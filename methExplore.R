@@ -147,8 +147,8 @@ cowplot::plot_grid(means_violin,sds_violin, ncol = 1, align = "vh", labels = LET
 # Over- and hypo- methylated features
 under_promoters <- cbind(promoters[promoters_ms$means<0.05 & promoters_ms$sds<0.05,1:3], promoters_ms[promoters_ms$means<0.05 & promoters_ms$sds<0.05,])
 under_promoters <- under_promoters[complete.cases(under_promoters),]
-write.table(under_promoters, file = "hypomethylated_promoters.bed", sep = "\t", quote = F, row.names = F, col.names = F)
+write.table(under_promoters[,1:3], file = "hypomethylated_promoters.bed", sep = "\t", quote = F, row.names = F, col.names = F)
 
 over_promoters <- cbind(promoters[promoters_ms$means>0.95 & promoters_ms$sds<0.05,1:3], promoters_ms[promoters_ms$means>0.95 & promoters_ms$sds<0.05,])
 over_promoters <- over_promoters[complete.cases(over_promoters),]
-write.table(over_promoters, file = "hypermethylated_promoters.bed", sep = "\t", quote = F, row.names = F, col.names = F)
+write.table(over_promoters[,1:3], file = "hypermethylated_promoters.bed", sep = "\t", quote = F, row.names = F, col.names = F)
