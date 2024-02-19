@@ -1,0 +1,106 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+```{r}
+library(Biobase)
+library(comethyl)
+library(GenomicRanges)
+library(openxlsx)
+library(tidyverse)
+
+setwd("C:\\Users\\fopa0001\\Downloads\\OneDrive_1_04-12-2023")
+
+options(stringsAsFactors = FALSE)
+Sys.setenv(R_THREADS = 1)
+WGCNA::enableWGCNAThreads(nThreads = 4)
+
+
+colData <- read.xlsx("pheno_comethyl.xlsx", rowNames = TRUE)
+
+chr = read.table(file="chrom_list.txt",
+                 header = F,
+                 stringsAsFactors = F)
+
+chr_list <- chr$V1
+
+#bs <- getCpGs(colData, 
+ #             path = "./",
+  #            chroms = chr_list,
+   #           file = "Unfiltered_BSseq.rds")
+
+
+#bs <- filterCpGs(bs, cov = 10, perSample = 0.85, file = "Filtered_BSseq.rds")
+bs <- readRDS("Filtered_BSseq.rds")
+setwd("C:\\Users\\fopa0001\\Downloads\\OneDrive_1_04-12-2023")
+
+### annotation file
+bed <- read.table(file="Salpinus_promoters_1kb.gff",header=F,
+                  sep="\t",
+                  stringsAsFactors = F)
+
+bed <- bed[,c(1,4,5)]
+
+colnames(bed) <- c("chr","start","end")#,"type","what","how")
+
+ac_annot <- makeGRangesFromDataFrame(bed,
+                                     keep.extra.columns = F,
+                                     ignore.strand = TRUE)
+
+
+```
+
+```{r}
+# call regions
+regions <- getRegions(bs,  
+                      custom=ac_annot)
+
+
+## filter regions
+regions<- filterRegions(regions, covMin = 10, 
+                         methSD = 0.1, 
+                         file = "Filtered_Regions.txt")
+
+
+```
+
+```{r}
+meth <- getRegionMeth(regions, 
+                      bs = bs, 
+                      file = "Region_Methylation.rds")
+
+mod <- model.matrix(~1, data = pData(bs))
+
+methAdj <- adjustRegionMeth(meth, 
+                            PCs = mod,
+                            file = "Adjusted_Region_Methylation.rds")
+
+WGCNA::allowWGCNAThreads()
+sft <- getSoftPower(methAdj,
+                    blockSize = 10000,
+                    corType = "pearson",
+                    file = "Soft_Power.rds")
+
+modules <- getModules(methAdj, 
+                      power = sft$powerEstimate, 
+                      regions = regions, 
+                      corType = "pearson", 
+                      file = "Modules.rds")
+
+
+MEs <- modules$MEs
+
+moduleDendro <- getDendro(MEs, distance = "pearson")
+
+
+MEtraitCor <- getMEtraitCor(MEs, colData = colData[c(1:6,8:10)], corType = "pearson" ,file = "ME_Trait_Correlation_Stats_prom1kb.txt")
+traitDendro <- getCor(MEs, y = colData[c(1:6,8:10)], corType = "pearson", robustY = FALSE) %>% getDendro(transpose = TRUE)
+
+plotMEtraitCor(MEtraitCor, moduleOrder = moduleDendro$order, traitOrder = traitDendro$order, p= 0.05/ncol(MEs) , file = "ME_Trait_Correlation_Heatmap_prom1kb.pdf") #
+
+```
