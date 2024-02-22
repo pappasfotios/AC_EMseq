@@ -10,6 +10,8 @@ Comparison of genetic and epigenetic similarity matrices : **methVSgen.R**
 
 Example of co-methylation module analysis considering promoters (1kb upstream regions): **comethyl_promoters1kb.Rmd**
 
+Case-control association tests for sperm density and velocity: **Assoc.R**
+
 Script to annotate signals : **annotate.sh** (have previously created Diamond DB with human and zebrafish proteome)
 
 
