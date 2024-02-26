@@ -1,5 +1,10 @@
 setwd("C:\\Users\\fopa0001\\Downloads\\OneDrive_1_04-12-2023")
 
+library(Biobase)
+library(comethyl)
+library(GenomicRanges)
+library(tidyverse)
+
 # Read file
 bs <- readRDS("Filtered_BSseq.rds")
 
