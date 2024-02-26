@@ -8,8 +8,8 @@ bedtools_path = "/home/fotis/miniconda3/envs/biotools/bin/bedtools"
 newcpgreport_path = "/home/fotis/miniconda3/envs/biotools/bin/newcpgreport"
 
 # CpG islands detection with strict options
-#command1 = [newcpgreport_path, "-sequence", "/home/fotis/analysis/Genome/Salvelinus_hybrid/ncbi_dataset/data/GCF_002910315.2/GCF_002910315.2_ASM291031v2_genomic.fna", "-window", "100", "-shift", "1", "-minlen", "200", "-minoe", "0.65", "-minpc", "55.", "-outfile", "sa_cpgi.report"]
-#subprocess.run(command1)
+command1 = [newcpgreport_path, "-sequence", "/home/fotis/analysis/Genome/Salvelinus_hybrid/ncbi_dataset/data/GCF_002910315.2/GCF_002910315.2_ASM291031v2_genomic.fna", "-window", "100", "-shift", "1", "-minlen", "200", "-minoe", "0.65", "-minpc", "55.", "-outfile", "sa_cpgi.report"]
+subprocess.run(command1)
 
 file_path = "./sa_cpgi.report"
 data = []
