@@ -1,7 +1,9 @@
 setwd("C:\\Users\\fopa0001\\Downloads\\OneDrive_1_04-12-2023")
 
+# Read file
 bs <- readRDS("Filtered_BSseq.rds")
 
+# Set binary traits
 bs@colData$statusDen <- rep("high", nrow(bs@colData))
 bs@colData$statusDen[order(bs@colData$Density)[21:27]] <- NA
 bs@colData$statusDen[order(bs@colData$Density)[1:20]] <- "low"
@@ -12,15 +14,16 @@ bs@colData$statusVCL[order(bs@colData$VCL)[1:20]] <- "low"
 
 
 #r <- promoters[,1:3]
-
 #ac_annot <- makeGRangesFromDataFrame(r, 
 #                                     keep.extra.columns = F,
 #                                     ignore.strand = TRUE)
 
+# Get and filter CpG regions
 regions <- getRegions(bs) #, custom=ac_annot)
 
 regions<- filterRegions(regions, covMin = 10, methSD = 0.1, file = "Filtered_Regions.txt")
 
+# Get methylation per region
 meth <- getRegionMeth(regions, 
                       bs = bs, 
                       file = "Region_Methylation.rds")
@@ -37,7 +40,7 @@ methAdj <- adjustRegionMeth(meth,
 #r <- as.data.frame(r)
 #m <- m[complete.cases(m) & matrixStats::rowSds(m) > 0.1 & matrixStats::rowMins(c) >= 10,]
 
-
+# Association tests for sperm density
 den_assoc <- data.frame(pValue=as.numeric(), diff=as.numeric())
 
 for (i in seq(1,ncol(methAdj))) {
@@ -50,7 +53,7 @@ for (i in seq(1,ncol(methAdj))) {
 den_assoc <- cbind(den_assoc, regions)
 den_assoc$adjP <- p.adjust(den_assoc$pValue, method = "BH")
 
-
+# Association tests for sperm velocity
 vcl_assoc <- data.frame(pValue=as.numeric(), diff=as.numeric())
 
 for (i in seq(1,ncol(methAdj))) {
@@ -64,6 +67,7 @@ vcl_assoc <- cbind(vcl_assoc, regions)
 vcl_assoc$adjP <- p.adjust(vcl_assoc$pValue, method = "BH")
 
 
+# Plots
 vlc2 <- ggplot(vcl_assoc, aes(x=diff,y=-log10(pValue))) + 
   geom_point(aes(col=adjP > 0.05)) + 
   theme_minimal() +
