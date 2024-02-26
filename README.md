@@ -1,4 +1,9 @@
 ## Analysis of EM-seq data
+Run filtering, alignment and methylation extraction pipeline (uses Bismark): **Snakefile**
+
+```{shell}
+snakemake --cores 4 --keep-going
+```
 
 Detect CpG islands and their respective shores in the reference genome: **CpGislandsAndShores.py**
 
