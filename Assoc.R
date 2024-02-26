@@ -1,5 +1,7 @@
 setwd("C:\\Users\\fopa0001\\Downloads\\OneDrive_1_04-12-2023")
 
+bs <- readRDS("Filtered_BSseq.rds")
+
 bs@colData$statusDen <- rep("high", nrow(bs@colData))
 bs@colData$statusDen[order(bs@colData$Density)[21:27]] <- NA
 bs@colData$statusDen[order(bs@colData$Density)[1:20]] <- "low"
