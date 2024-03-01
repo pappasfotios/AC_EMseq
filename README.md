@@ -8,6 +8,7 @@ snakemake --cores 4 --keep-going
 Detect CpG islands and their respective shores in the reference genome: **CpGislandsAndShores.py**
 
 Explorative data analysis of CpG methylation landscape : **methExplore.R**
+![CpG_summary_new](https://github.com/pappasfotios/AC_EMseq/assets/49454378/9b7f29aa-39ce-427d-9bbf-a9d55b59616d)
 
 Co-methylation of CpGs by physical distance : **comethylation_decay.R**
 
