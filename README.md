@@ -17,10 +17,10 @@ Example of co-methylation module analysis considering promoters (1kb upstream re
 
 Case-control association tests for sperm density and velocity: **Assoc.R**
 
-Script to annotate signals : **annotate.sh** (have previously created Diamond DB with human and zebrafish proteome)
+Script to annotate signals : **annotate.sh** (have previously created Diamond DB with human (hs) and zebrafish (zf) proteome)
 
 
 
 ```{shell}
-bash annotate.sh <input_bed_file> <slop_value> <database (zf or hs for zebrafish or human protein database respectively)>
+bash annotate.sh <input_bed_file> <slop_value in bp> <database (zf or hs for zebrafish or human protein database respectively)>
 ```
