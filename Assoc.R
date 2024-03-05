@@ -106,6 +106,7 @@ den_assoc$chrom <- match(den_assoc$chrom, unique(den_assoc$chrom))
 qqman::manhattan(den_assoc, chr = "chrom", bp="start", p="pValue", snp = "RegionID", 
                  chrlabs = c(unique(den_assoc$chr)[1:39],"UA"), logp = T, genomewideline = -log10(0.05/nrow(den_assoc)), 
                  suggestiveline = -log10(mean(max(den_assoc$pValue[den_assoc$adjP<0.05]),min(den_assoc$pValue[den_assoc$adjP>0.05]))))
+qqman::qq(den_assoc$pValue)
 
 
 vcl_assoc$chrom <- vcl_assoc$chr
@@ -115,4 +116,5 @@ vcl_assoc$chrom <- match(vcl_assoc$chrom, unique(vcl_assoc$chrom))
 qqman::manhattan(vcl_assoc, chr = "chrom", bp="start", p="pValue", snp = "RegionID", 
                  chrlabs = c(unique(vcl_assoc$chr)[1:39],"UA"), logp = T, genomewideline = -log10(0.05/nrow(vcl_assoc)), 
                  suggestiveline = -log10(mean(max(vcl_assoc$pValue[vcl_assoc$adjP<0.05]),min(vcl_assoc$pValue[vcl_assoc$adjP>0.05]))))
+qqman::qq(vcl_assoc$pValue)
 
