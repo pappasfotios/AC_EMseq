@@ -24,7 +24,7 @@ bs@colData$statusVCL[order(bs@colData$VCL)[1:20]] <- "low"
 #                                     ignore.strand = TRUE)
 
 # Get and filter CpG regions
-regions <- getRegions(bs) #, custom=ac_annot)
+regions <- getRegions(bs, n=5) #, custom=ac_annot)
 
 regions<- filterRegions(regions, covMin = 10, methSD = 0.1, file = "Filtered_Regions.txt")
 
@@ -117,4 +117,3 @@ qqman::manhattan(vcl_assoc, chr = "chrom", bp="start", p="pValue", snp = "Region
                  chrlabs = c(unique(vcl_assoc$chr)[1:39],"UA"), logp = T, genomewideline = -log10(0.05/nrow(vcl_assoc)), 
                  suggestiveline = -log10(mean(max(vcl_assoc$pValue[vcl_assoc$adjP<0.05]),min(vcl_assoc$pValue[vcl_assoc$adjP>0.05]))))
 qqman::qq(vcl_assoc$pValue)
-
