@@ -4,6 +4,7 @@ library(ggplot2)
 library(data.table)
 library(GenomicRanges)
 library(dplyr)
+library(ComplexHeatmap)
 
 # Import data
 bs <- readRDS("Filtered_BSseq.rds")
@@ -82,13 +83,48 @@ gene_bodies_gr <- makeGRangesFromDataFrame(gene_bodies,
 ## reduce?
 intergenic <- as.data.frame(gaps(reduce(gene_bodies_gr)))
 
+# Methylation Summary
+bs@colData$Id_seq <- rep(NA, nrow(bs@colData))
+subset_rows <- grep("UC-", row.names(bs@colData))
+subset_rows <- subset_rows[!is.na(subset_rows)]
+
+bs@colData$Id_seq[subset_rows] <- substr(rownames(bs@colData)[subset_rows], 9, 18)
+bs@colData$Id_seq[-subset_rows] <- substr(rownames(bs@colData)[-subset_rows], 9, 21)
+
+totalMeth <- read.table(file = "cp2022emseq_reportSum.txt", header = F, stringsAsFactors = T)
+names(totalMeth) <- c("Id_seq", "Perc_Meth")
+totalMeth <- totalMeth[-grep(398, totalMeth$Id_seq),]
+totalMeth <- totalMeth[order(match(totalMeth$Id_seq, bs@colData$Id_seq)),]
+rownames(totalMeth) <- 1:nrow(totalMeth)
+totalMeth$MethProp <- as.numeric(substr(totalMeth$Perc_Meth,1,4))/100
+
+m <- bsseq::getMeth(bs, type = "raw", what = "perBase")
+cov <- bsseq::getCoverage(bs, type = "Cov")
+
+SDmask <- matrixStats::rowSds(m) > 0.1
+  
+cov <- cov[SDmask,]
+m <- m[SDmask,]
+m <- m[matrixStats::rowMins(cov) >= 10,]
+m <- m[complete.cases(m),]
+
+colnames(m) <- seq(1,47)
+
+ha <- HeatmapAnnotation(meCpG_proportion = anno_barplot(totalMeth$MethProp,
+                                                        baseline = "min", gp = gpar(fill="brown4"), ylab), height = unit(20, "mm"))
+h1 <- densityHeatmap(m, column_order = order(totalMeth$MethProp), column_title = " ", ylab="CpG methylation", heatmap_legend_param = list(direction = "horizontal"))
+h2 <- Heatmap(t(scale(as.matrix(bs@colData[,-c(7,11)]))), column_order = order(totalMeth$MethProp), 
+              heatmap_legend_param = list(title = "z-scores", direction = "horizontal"), height = 200, column_labels = seq(1:47))
+complex <- draw(h1 %v% ha %v% h2, heatmap_legend_side = "bottom", legend_gap= unit(25,"mm"))
+
+
 # Function to extract region means and SDs
 get_meth_stats <- function(ant){
   
-  m <- bsseq::getMeth(bs, ant ,type = 'raw', what = 'perRegion')
+  mv <- bsseq::getMeth(bs, ant ,type = 'raw', what = 'perRegion')
   
-  means <- matrixStats::rowMeans2(m)
-  sds <- matrixStats::rowSds(m)
+  means <- matrixStats::rowMeans2(mv)
+  sds <- matrixStats::rowSds(mv)
   
   return(data.frame(means=means, sds=sds))
 }
