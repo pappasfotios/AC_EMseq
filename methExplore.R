@@ -111,11 +111,11 @@ m <- m[complete.cases(m),]
 colnames(m) <- seq(1,47)
 
 ha <- HeatmapAnnotation(meCpG_proportion = anno_barplot(totalMeth$MethProp,
-                                                        baseline = "min", gp = gpar(fill="brown4"), ylab), height = unit(20, "mm"))
-h1 <- densityHeatmap(m, column_order = order(totalMeth$MethProp), column_title = " ", ylab="CpG methylation", heatmap_legend_param = list(direction = "horizontal"))
+                                                        baseline = "min", gp = gpar(fill="brown4"), ylab), height = unit(20, "mm"), gap = unit(2,"mm"))
+h1 <- densityHeatmap(m, column_order = order(totalMeth$MethProp), column_title = " ", ylab="CpG methylation", heatmap_legend_param = list(direction = "horizontal"),top_annotation = ha)
 h2 <- Heatmap(t(scale(as.matrix(bs@colData[,-c(7,11)]))), column_order = order(totalMeth$MethProp), 
               heatmap_legend_param = list(title = "z-scores", direction = "horizontal"), height = 200, column_labels = seq(1:47))
-complex <- draw(h1 %v% ha %v% h2, heatmap_legend_side = "bottom", legend_gap= unit(25,"mm"))
+complex <- draw(h1 %v% h2, heatmap_legend_side = "bottom", legend_gap= unit(25,"mm"))
 
 
 # Function to extract region means and SDs
