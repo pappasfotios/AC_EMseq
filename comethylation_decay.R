@@ -19,10 +19,14 @@ m <- bsseq::getMeth(bs, type = "raw", what = "perBase")
 r <- as.data.frame(granges(bs))
 r$seqnames <- as.character(r$seqnames)
 
-r <- r[complete.cases(m) & matrixStats::rowSds(m) > 0.1,]
-r <- as.data.frame(r)
-m <- m[complete.cases(m) & matrixStats::rowSds(m) > 0.1,]
+cov <- bsseq::getCoverage(bs, type = "Cov")
 
+SDmask <- matrixStats::rowSds(m) > 0.1
+COVmask <- matrixStats::rowMins(cov) >= 10
+
+r <- r[complete.cases(m) & SDmask & COVmask,]
+r <- as.data.frame(r)
+m <- m[complete.cases(m) & SDmask & COVmask,]
 
 bin_widths <- seq(10000, 1000000, by=10000)
 
