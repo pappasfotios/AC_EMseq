@@ -1,22 +1,32 @@
+setwd("C:\\Users\\fopa0001\\Downloads\\OneDrive_1_04-12-2023")
+
 library(dplyr)
 library(ComplexHeatmap)
 library(circlize)
 library(dendextend)
 library(RColorBrewer)
 library(pedigree)
+library(ggplot2)
+
+bs <- readRDS("Filtered_BSseq.rds")
 
 # ERM
 m <- bsseq::getMeth(bs, type = "raw", what = "perBase")
-m <- m[matrixStats::rowSds(m) > 0.1,]
-m <- m[complete.cases(m),]
+cov <- bsseq::getCoverage(bs, type = "Cov")
+
+SDmask <- matrixStats::rowSds(m) > 0.1
+COVmask <- matrixStats::rowMins(cov) >= 10
+
+m <- m[complete.cases(m) & SDmask & COVmask,]
 
 erm1 <- cor(m)
-#erm2 <- cor(m, method = "spearman")
+erm2 <- scale(t(m)) %*% t(scale(t(m)))
+erm2 <- erm2/mean(diag(erm2))
 
 colnames(erm1) <- seq(1,47)
 rownames(erm1) <- seq(1,47)
 
-corrplot::corrplot(erm1, method = "square", diag = T, is.corr = F)
+corrplot::corrplot(erm2, method = "square", diag = T, is.corr = F)
 
 ped <- read.table(file.choose(), header = T, stringsAsFactors = T)
 ped <- ped[!duplicated(ped$Id),]
@@ -55,12 +65,10 @@ A <- reshape::melt(rA,)
 
 corrplot::corrplot(as.matrix(rA), method = "square", diag = F, is.corr = F, type = "lower")
 
-meth_gen <- data.frame(ERM = as.numeric(erm1[lower.tri(erm1, diag = F)]), A_mat = as.numeric(rA[lower.tri(rA, diag = F)]))
+meth_gen <- data.frame(ERM = as.numeric(erm2[lower.tri(erm2, diag = F)]), A_mat = as.numeric(rA[lower.tri(rA, diag = F)]))
 ggplot(data = meth_gen, aes(x=A_mat, y=ERM)) + geom_point(color="magenta3", pch=19) + geom_smooth(method=lm , color="black", fill="skyblue3", se=TRUE) + theme_light()
 
-
-## Tanglegram
-
+## Complex Heatmap
 col1 = colorRamp2(c(min(meth_gen$A_mat), median(meth_gen$A_mat), max(meth_gen$A_mat)), c("white", "skyblue","darkblue"))
 col2 = colorRamp2(c(min(meth_gen$ERM), median(meth_gen$ERM), max(meth_gen$ERM)), c("white", "lightpink","darkred"))
 
@@ -72,17 +80,17 @@ ht1 = Heatmap(as.matrix(rA),name = "A-matrix", rect_gp = gpar(type="none"), col=
                 }
               })
 
-ht2 = ht2 = Heatmap(erm1,name = "Mehtylation\ncorrelation\nmatrix" ,rect_gp = gpar(type = "none"), col = col2,
-                    cluster_rows = FALSE, cluster_columns = FALSE,
-                    cell_fun = function(j, i, x, y, w, h, fill) {
-                      if(i < j) {
-                        grid.rect(x, y, w, h, gp = gpar(fill = fill,col = "darkgrey", lwd=2))
-                      }
-                    })
+ht2 = Heatmap(erm2,name = "MRM" ,rect_gp = gpar(type = "none"), col = col2, column_labels = rep(" ", ncol(erm1)) ,
+              cluster_rows = FALSE, cluster_columns = FALSE,
+              cell_fun = function(j, i, x, y, w, h, fill) {
+                if(i < j) {
+                  grid.rect(x, y, w, h, gp = gpar(fill = fill,col = "darkgrey", lwd=2))
+                }
+              })
 
 draw(ht1 + ht2, ht_gap = unit(-300, "mm"))
 
-
+## Tanglegram
 d1 <- as.matrix(1 - rA) %>% dist() %>% hclust(method = "ward.D") %>% as.dendrogram()
 
 d2 <- as.matrix(1 - erm1) %>% dist() %>% hclust(method = "ward.D") %>% as.dendrogram()
