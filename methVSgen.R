@@ -7,6 +7,7 @@ library(dendextend)
 library(RColorBrewer)
 library(pedigree)
 library(ggplot2)
+library(GGally)
 
 bs <- readRDS("Filtered_BSseq.rds")
 
@@ -21,17 +22,17 @@ m <- m[complete.cases(m) & SDmask & COVmask,]
 
 erm1 <- cor(m)
 erm2 <- scale(t(m)) %*% t(scale(t(m)))
-erm2 <- erm2/mean(diag(erm2))
+erm2 <- as.matrix(erm2/mean(diag(erm2)))
 
-colnames(erm1) <- seq(1,47)
-rownames(erm1) <- seq(1,47)
+colnames(erm2) <- seq(1,47)
+rownames(erm2) <- seq(1,47)
 
 corrplot::corrplot(erm2, method = "square", diag = T, is.corr = F)
 
-ped <- read.table(file.choose(), header = T, stringsAsFactors = T)
+ped <- read.table("//wsl.localhost/Ubuntu/home/fotis/analysis/BLUP/ac_ped_updated_2023.txt", header = T, stringsAsFactors = T)
 ped <- ped[!duplicated(ped$Id),]
 
-tagIDs <- openxlsx::read.xlsx(file.choose())
+tagIDs <- openxlsx::read.xlsx("C:/Users/fopa0001/Downloads/Arctic_charr_EMseq_pheno.xlsx")
 tagIDs$Id_tag <- as.factor(tagIDs$Id_tag)
 tagIDs <- tagIDs[-grep(398, tagIDs$Id_seq),]
 
@@ -50,11 +51,11 @@ rA <- rA[,2:48]
 names(rA) <- row.names(rA)
 
 bs@colData$Id_seq <- rep(NA, nrow(bs@colData))
-subset_rows <- grep("UC-", row.names(bs@colData))
-subset_rows <- subset_rows[!is.na(subset_rows)]
+subset_rowsA <- grep("UC-", row.names(bs@colData))
+subset_rowsA <- subset_rowsA[!is.na(subset_rowsA)]
 
-bs@colData$Id_seq[subset_rows] <- substr(rownames(bs@colData)[subset_rows], 9, 18)
-bs@colData$Id_seq[-subset_rows] <- substr(rownames(bs@colData)[-subset_rows], 9, 21)
+bs@colData$Id_seq[subset_rowsA] <- substr(rownames(bs@colData)[subset_rowsA], 9, 18)
+bs@colData$Id_seq[-subset_rowsA] <- substr(rownames(bs@colData)[-subset_rowsA], 9, 21)
 colData <- dplyr::inner_join(as.data.frame(bs@colData), tagIDs[,1:2], by="Id_seq")
 colData$key <- seq(1,47)
 
@@ -65,12 +66,109 @@ A <- reshape::melt(rA,)
 
 corrplot::corrplot(as.matrix(rA), method = "square", diag = F, is.corr = F, type = "lower")
 
-meth_gen <- data.frame(ERM = as.numeric(erm2[lower.tri(erm2, diag = F)]), A_mat = as.numeric(rA[lower.tri(rA, diag = F)]))
-ggplot(data = meth_gen, aes(x=A_mat, y=ERM)) + geom_point(color="magenta3", pch=19) + geom_smooth(method=lm , color="black", fill="skyblue3", se=TRUE) + theme_light()
+# Genomic relationships
+GRM1 <- read.table(file = "plink.rel", header = F)
+grm1IDs <- read.table(file = "plink.rel.id", header = F)
+
+subset_rowsG <- grep("UC-", grm1IDs[,1])
+subset_rowsG <- subset_rowsG[!is.na(subset_rowsG)]
+
+colnames(GRM1)[subset_rowsG] <- substr(grm1IDs[subset_rowsG,1], 9, 18)
+colnames(GRM1)[-subset_rowsG] <- substr(grm1IDs[-subset_rowsG,1], 9, 21)
+
+rownames(GRM1) <- colnames(GRM1)
+
+GRM1 <- GRM1[bs$Id_seq,bs$Id_seq]  # Reorder columns and rows
+GRM1 <- as.matrix(GRM1)
+
+colnames(GRM1) <- seq(1,47)
+rownames(GRM1) <- colnames(GRM1)
+
+# IBD matrix
+IBD <- read.table("ibd_matrix.genome", header = T)
+IBD <- reshape(IBD[,c(2,4,14)], direction = "wide", idvar = "IID1", timevar = "IID2")
+
+rownames(IBD) <- substring(IBD[,1], 9)
+IBD <- IBD[,-1]
+colnames(IBD) <- substring(colnames(IBD), 15)
+
+IBD <- rbind(IBD, c(rep(0,ncol(IBD)-1),1))
+rownames(IBD)[nrow(IBD)] <- colnames(IBD)[!colnames(IBD) %in% rownames(IBD)]
+IBD <- cbind(c(1, rep(0,nrow(IBD)-1)), IBD)
+colnames(IBD)[1] <- rownames(IBD)[!rownames(IBD) %in% colnames(IBD)]
+
+IBD <- as.matrix(IBD)
+
+diag(IBD) <- 1
+
+IBD[lower.tri(IBD,diag = F)] <- IBD[upper.tri(IBD,diag = F)]
+IBD <- IBD[bs$Id_seq,bs$Id_seq]
+
+# Kinships from pedigree
+ped <- ped %>%
+  mutate(FID = as.factor(interaction(Sire, Dam, drop = TRUE))) %>%
+  mutate(FID = as.numeric(FID)) # Convert FID to numeric for PLINK compatibility
+
+ped$Sex <- 0
+ped$Phenotype <- -9
+
+ped_for_plink <- ped %>%
+  select(FID, Id, Sire, Dam, Sex, Phenotype) %>%
+  rename(IID = Id, PID = Sire, MID = Dam)
+
+tagIDs <- tagIDs %>% rename(IID = Id_tag)
+
+ped_for_plink <- ped_for_plink[ped_for_plink$IID %in% tagIDs$IID,]
+
+ped_for_plink <- merge(ped_for_plink, tagIDs[,1:2], by = "IID")
+
+ped_for_plink <- ped_for_plink[match(bs$Id_seq, ped_for_plink$Id_seq),]
+
+score_matrix <- matrix(0, nrow = nrow(ped_for_plink), ncol = nrow(ped_for_plink))
+
+rownames(score_matrix) <- ped_for_plink$IID
+colnames(score_matrix) <- ped_for_plink$IID
+
+for (i in seq(1,ncol(score_matrix))) {
+  for (j in seq(1,ncol(score_matrix))) {
+    if (i == j) {
+      # Same IID
+      score_matrix[i, j] <- 1
+    } else {
+      # Different IIDs
+      if (ped_for_plink$FID[i] == ped_for_plink$FID[j]) {
+        # Same FID
+        score_matrix[i, j] <- 0.5
+      } else if (ped_for_plink$PID[i] == ped_for_plink$PID[j] | ped_for_plink$MID[i] == ped_for_plink$MID[j]) {
+        # Different FID but common PID or MID
+        score_matrix[i, j] <- 0.25
+      } # Otherwise, score remains 0 (different IIDs, FIDs, and no common PID or MID)
+    }
+  }
+}
+
+
+# Plots
+meth_gen <- data.frame(MRM = as.numeric(erm2[lower.tri(erm2, diag = F)]),
+                       A_mat = as.numeric(rA[lower.tri(rA, diag = F)]), 
+                       GRM = as.numeric(GRM1[lower.tri(GRM1, diag = F)]),
+                       IBD = as.numeric(IBD[upper.tri(IBD, diag = F)]),
+                       kinship = as.numeric(score_matrix[lower.tri(score_matrix, diag = F)])
+                       )
+
+meth_gen$kinship[meth_gen$kinship==0.5] <- "full-sibs"
+meth_gen$kinship[meth_gen$kinship==0.25] <- "half-sibs"
+meth_gen$kinship[meth_gen$kinship==0] <- "non-sibs"
+
+ggpairs(meth_gen, columns = 1:4, aes(color=kinship, alpha=0.9)) + 
+  scale_fill_manual(values = c("turquoise4", "salmon3", "purple3")) + 
+  scale_color_manual(values = c("turquoise4", "salmon3", "purple3"))
 
 ## Complex Heatmap
 col1 = colorRamp2(c(min(meth_gen$A_mat), median(meth_gen$A_mat), max(meth_gen$A_mat)), c("white", "skyblue","darkblue"))
-col2 = colorRamp2(c(min(meth_gen$ERM), median(meth_gen$ERM), max(meth_gen$ERM)), c("white", "lightpink","darkred"))
+col2 = colorRamp2(c(min(meth_gen$MRM), median(meth_gen$MRM), max(meth_gen$MRM)), c("white", "lightpink","darkred"))
+col3 = colorRamp2(c(min(meth_gen$GRM), median(meth_gen$GRM), max(meth_gen$GRM)), c("white", "thistle","purple4"))
+
 
 ht1 = Heatmap(as.matrix(rA),name = "A-matrix", rect_gp = gpar(type="none"), col=col1,
               cluster_rows = FALSE, cluster_columns = FALSE,
@@ -80,7 +178,7 @@ ht1 = Heatmap(as.matrix(rA),name = "A-matrix", rect_gp = gpar(type="none"), col=
                 }
               })
 
-ht2 = Heatmap(erm2,name = "MRM" ,rect_gp = gpar(type = "none"), col = col2, column_labels = rep(" ", ncol(erm1)) ,
+ht2 = Heatmap(erm2,name = "MRM" ,rect_gp = gpar(type = "none"), col = col2, column_labels = rep(" ", ncol(erm1)),
               cluster_rows = FALSE, cluster_columns = FALSE,
               cell_fun = function(j, i, x, y, w, h, fill) {
                 if(i < j) {
@@ -88,7 +186,16 @@ ht2 = Heatmap(erm2,name = "MRM" ,rect_gp = gpar(type = "none"), col = col2, colu
                 }
               })
 
+ht3 = Heatmap(GRM1,name = "GRM", rect_gp = gpar(type="none"), col=col3,
+              cluster_rows = FALSE, cluster_columns = FALSE,
+              cell_fun = function(j, i, x, y, w, h, fill) {
+                if(i > j) {
+                  grid.rect(x, y, w, h, gp = gpar(fill = fill, col = "darkgrey", lwd=2))
+                }
+              })
+
 draw(ht1 + ht2, ht_gap = unit(-300, "mm"))
+draw(ht3 + ht2, ht_gap = unit(-300, "mm"))
 
 ## Tanglegram
 d1 <- as.matrix(1 - rA) %>% dist() %>% hclust(method = "ward.D") %>% as.dendrogram()
