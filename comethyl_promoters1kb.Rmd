@@ -1,11 +1,7 @@
 ---
-title: "R Notebook"
+title: "Comethyl promoters 1kb"
 output: html_notebook
 ---
-
-This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
-
-Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
 
 ```{r}
 library(Biobase)
@@ -16,6 +12,8 @@ library(dplyr)
 library(tidyverse)
 library(circlize)
 library(ComplexHeatmap)
+library(ggplot2)
+library(ggbio)
 
 setwd("C:\\Users\\fopa0001\\Downloads\\OneDrive_1_04-12-2023")
 
@@ -130,7 +128,7 @@ main_hm_prom <- Heatmap(cor_matrix_prom, col=color_mapping, bottom_annotation = 
 main_hm_prom
 ```
 ```{r}
-colors <- rainbow(length(unique(MEtraitCor$trait)))
+colors <- as.character(unique(MEtraitCor$module))
 
 sig_regions <- MEtraitCor[MEtraitCor$p < 0.05/ncol(MEs) & MEtraitCor$module!="grey",1:2]
 sig_regions <- inner_join(sig_regions,modules$regions, by="module")
@@ -161,17 +159,16 @@ genome_gr <- GRanges(
 sig_regions_gr <- GRanges(
   seqnames = Rle(sig_regions$chr),
   ranges = IRanges(start = sig_regions$start, end = sig_regions$end),
-  trait = sig_regions$trait)
+  module = sig_regions$module)
 
 combined_gr <- c(genome_gr, sig_regions_gr)
 
-ggbio::autoplot(combined_gr,layout = "karyogram", aes(color=trait,fill=trait)) +
+ggbio::autoplot(combined_gr,layout = "karyogram", aes(color=module,fill=module)) +
   theme_void() +
-  scale_fill_manual(values = colors[unique(MEtraitCor$trait) %in% unique(sig_regions$trait)], na.value = "grey40") +
-  scale_color_manual(values = colors[unique(MEtraitCor$trait) %in% unique(sig_regions$trait)], na.value = "black") +
+  scale_fill_manual(values = colors[unique(MEtraitCor$module) %in% unique(sig_regions$module)], na.value = "coral4") +
+  scale_color_manual(values = colors[unique(MEtraitCor$module) %in% unique(sig_regions$module)], na.value = "black") +
   coord_flip() +
   facet_wrap(~seqnames, nrow = 1) +
-  theme(strip.text = element_text(angle = 90))+
-  guides(fill = guide_legend(title = "Trait"),color = FALSE)
+  theme(strip.text = element_text(angle = 90), legend.position = "none")
 
 ```
