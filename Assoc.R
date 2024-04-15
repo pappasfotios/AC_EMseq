@@ -78,8 +78,9 @@ vlc2 <- ggplot(vcl_assoc, aes(x=diff,y=-log10(pValue))) +
   theme_minimal() +
   geom_hline(yintercept = -log10(0.05/nrow(regions)), col="limegreen", linetype = "dashed") + 
   scale_color_manual(values = c("red", "grey"))  + 
-  ggtitle(label = "high vs low Velocity") + 
+  ggtitle(label = "High vs Low Curvilinear Velocity (VCL)") + 
   theme(legend.position = "none", plot.title = element_text(hjust = 0.5)) + 
+  labs(x="Difference of means", y=expression(-log[10](p))) +
   ylim(-0.2, 8)
 vlc2
 
@@ -89,8 +90,9 @@ vlc1 <- ggplot(den_assoc, aes(x=diff,y=-log10(pValue))) +
   theme_minimal() + 
   geom_hline(yintercept = -log10(0.05/nrow(regions)), col="limegreen", linetype = "dashed") + 
   scale_color_manual(values = c("red", "grey"))  + 
-  ggtitle(label = "high vs low Density") + 
+  ggtitle(label = "High vs Low Concentration") + 
   theme(legend.position = "none", plot.title = element_text(hjust = 0.5)) + 
+  labs(x="Difference of means", y=expression(-log[10](p))) +
   ylim(-0.2, 8)
 vlc1
 
@@ -102,9 +104,10 @@ den_assoc$chrom <- den_assoc$chr
 den_assoc$chrom[grep("NW", den_assoc$chr)] <- "UK"
 den_assoc$chrom <- match(den_assoc$chrom, unique(den_assoc$chrom))
 
-qqman::manhattan(den_assoc, chr = "chrom", bp="start", p="pValue", snp = "RegionID", 
-                 chrlabs = c(unique(den_assoc$chr)[1:39],"UA"), logp = T, genomewideline = -log10(0.05/nrow(den_assoc)), 
-                 suggestiveline = -log10(mean(max(den_assoc$pValue[den_assoc$adjP<0.05]),min(den_assoc$pValue[den_assoc$adjP>0.05]))))
+qqman::manhattan(den_assoc, chr = "chrom", bp="start", p="pValue", snp = "RegionID", col = c("skyblue3","grey40"),
+                 chrlabs = c(paste0("LG",c(1,2,3,"4p","4q.1:29","4q.2",5,"6.1","6.2",seq(7,28),seq(30,37))),"UA"), logp = T, genomewideline = -log10(0.05/nrow(den_assoc)), 
+                 suggestiveline = 0.5*(-log10(max(den_assoc$pValue[den_assoc$adjP<0.05])) + -log10(min(den_assoc$pValue[den_assoc$adjP>0.05]))), 
+                 las=2, xlab=" ", main="Concentration")
 qqman::qq(den_assoc$pValue)
 
 
@@ -113,83 +116,13 @@ vcl_assoc$chrom <- vcl_assoc$chr
 vcl_assoc$chrom[grep("NW", vcl_assoc$chr)] <- "UK"
 vcl_assoc$chrom <- match(vcl_assoc$chrom, unique(vcl_assoc$chrom))
 
-qqman::manhattan(vcl_assoc, chr = "chrom", bp="start", p="pValue", snp = "RegionID", 
-                 chrlabs = c(unique(vcl_assoc$chr)[1:39],"UA"), logp = T, genomewideline = -log10(0.05/nrow(vcl_assoc)), 
-                 suggestiveline = -log10(mean(max(vcl_assoc$pValue[vcl_assoc$adjP<0.05]),min(vcl_assoc$pValue[vcl_assoc$adjP>0.05]))))
+qqman::manhattan(vcl_assoc, chr = "chrom", bp="start", p="pValue", snp = "RegionID", col = c("skyblue3","grey40"),
+                 chrlabs = c(paste0("LG",c(1,2,3,"4p","4q.1:29","4q.2",5,"6.1","6.2",seq(7,28),seq(30,37))),"UA"), logp = T, genomewideline = -log10(0.05/nrow(vcl_assoc)), 
+                 suggestiveline = 0.5*(-log10(max(vcl_assoc$pValue[vcl_assoc$adjP<0.05])) + -log10(min(vcl_assoc$pValue[vcl_assoc$adjP>0.05]))), 
+                 las=2, xlab=" ", main="Curvilinear Velocity (VCL)")
 qqman::qq(vcl_assoc$pValue)
 
 
 
-
-
-calculate_EST <- function(methylationMatrix, groupingVariable) {
-  # Remove samples with NA in the grouping variable
-  validIndices <- !is.na(groupingVariable)
-  
-  # Split the methylation data into two groups based on the grouping variable
-  group1 <- groupingVariable == "high"
-  group2 <- groupingVariable == "low"
-  
-  # across variance
-  numerator <- matrixStats::rowSds(methylationMatrix[,validIndices])
-  
-  # within variance
-  overallMean <- (matrixStats::rowSds(methylationMatrix[,group1])^2 + matrixStats::rowSds(methylationMatrix[,group2])^2) / 2
-  
-  # Calculate E_ST for each CpG site
-  E_ST <- numerator^2 / (numerator^2 + overallMean)
-  
-  # Ensure the output is a numeric vector
-  return(as.numeric(E_ST))
-}
-
-
-calculate_EST <- function(methylationMatrix, groupingVariable) {
-  # Ensure 'matrixStats' library is available
-  if (!requireNamespace("matrixStats", quietly = TRUE)) {
-    stop("The 'matrixStats' package is required but not installed.")
-  }
-  
-  # Filter out samples with NA in groupingVariable
-  validSamples <- !is.na(groupingVariable)
-  methylationMatrix <- methylationMatrix[, validSamples]
-  groupingVariable <- groupingVariable[validSamples]
-  
-  # Convert grouping variable to factor if it's not already
-  groupingVariable <- factor(groupingVariable)
-  
-  # Check for exactly two levels in groupingVariable
-  if(length(levels(groupingVariable)) != 2) {
-    stop("Grouping variable must have exactly two levels.")
-  }
-  
-  # Calculate group means
-  groupMeans <- tapply(1:ncol(methylationMatrix), groupingVariable, function(i) rowMeans(methylationMatrix[, i], na.rm = TRUE))
-  
-  # Calculate between-group variance (squared difference of means)
-  betweenGroupVariance <- (groupMeans[[1]] - groupMeans[[2]])^2
-  
-  # Calculate within-group variance for each group and then average them
-  withinGroupVariance <- sapply(groupMeans, function(mean, group) {
-    diffSq <- (methylationMatrix[, groupingVariable == group] - mean)^2
-    rowMeans(diffSq, na.rm = TRUE)
-  }, group=levels(groupingVariable))
-  
-  averageWithinGroupVariance <- rowMeans(withinGroupVariance, na.rm = TRUE)
-  
-  # Calculate E_ST for each CpG site
-  E_ST <- betweenGroupVariance / (betweenGroupVariance + averageWithinGroupVariance)
-  
-  # Return the E_ST values
-  return(E_ST)
-}
-
-# Usage example
-# Assuming 'methAdj' is your matrix with samples as columns and CpG sites as rows,
-# and 'bs$statusDen' is the binary factor indicating sperm density status for each sample:
-E_ST_values <- calculate_EST(t(methAdj), bs$statusDen)
-head(E_ST_values)
-
-
-
-E_ST_values <- calculate_EST(t(methAdj), bs$statusDen)
+sig_regions <- cbind(methAdj[,colnames(methAdj) %in% den_assoc$RegionID[den_assoc$adjP < 0.05]], methAdj[,colnames(methAdj) %in% vcl_assoc$RegionID[vcl_assoc$adjP < 0.05]])
+write.table(sig_regions,file = "sigAssocRegions.txt")
