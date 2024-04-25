@@ -10,6 +10,7 @@ library(GenomicRanges)
 library(openxlsx)
 library(dplyr)
 library(tidyverse)
+library(reshape2)
 library(circlize)
 library(ComplexHeatmap)
 library(ggplot2)
@@ -21,25 +22,12 @@ options(stringsAsFactors = FALSE)
 Sys.setenv(R_THREADS = 1)
 WGCNA::enableWGCNAThreads(nThreads = 4)
 
-
 colData <- read.xlsx("pheno_comethyl.xlsx", rowNames = TRUE)
 colData$Density[colData$Density>10000] <- 10000
 colData <- colData %>% rename(Concentration = Density)
 
-chr = read.table(file="chrom_list.txt",
-                 header = F,
-                 stringsAsFactors = F)
+bs <- readRDS("noSNPs_BSseq.rds")
 
-chr_list <- chr$V1
-
-#bs <- getCpGs(colData, 
- #             path = "./",
-  #            chroms = chr_list,
-   #           file = "Unfiltered_BSseq.rds")
-
-
-#bs <- filterCpGs(bs, cov = 10, perSample = 0.85, file = "Filtered_BSseq.rds")
-bs <- readRDS("Filtered_BSseq.rds")
 setwd("C:\\Users\\fopa0001\\Downloads\\OneDrive_1_04-12-2023")
 
 ### annotation file
@@ -49,7 +37,7 @@ bed <- read.table(file="Salpinus_promoters_1kb.gff",header=F,
 
 bed <- bed[,c(1,4,5)]
 
-colnames(bed) <- c("chr","start","end")#,"type","what","how")
+colnames(bed) <- c("chr","start","end")
 
 ac_annot <- makeGRangesFromDataFrame(bed,
                                      keep.extra.columns = F,
@@ -66,7 +54,7 @@ regions <- getRegions(bs,
 
 ## filter regions
 regions<- filterRegions(regions, covMin = 10, 
-                         methSD = 0.1, 
+                         methSD = 0.05, 
                          file = "Filtered_Regions.txt")
 
 
@@ -104,8 +92,13 @@ moduleDendro <- getDendro(MEs, distance = "pearson")
 MEtraitCor <- getMEtraitCor(MEs, colData = colData[c(1:6,8:10)], corType = "pearson" ,file = "ME_Trait_Correlation_Stats_prom1kb.txt")
 traitDendro <- getCor(MEs, y = colData[c(1:6,8:10)], corType = "pearson", robustY = FALSE) %>% getDendro(transpose = TRUE)
 
-cor_matrix_prom <- as.matrix(with(MEtraitCor, tapply(cor, list(trait, module), mean)))
-p_matrix_prom <- as.matrix(with(MEtraitCor, tapply(p, list(trait, module), mean)))
+cor_matrix_prom <- dcast(MEtraitCor, trait ~ module, value.var = "cor")
+rownames(cor_matrix_prom) <- cor_matrix_prom[,1]
+cor_matrix_prom <- as.matrix(cor_matrix_prom[, -1])
+
+p_matrix_prom <- dcast(MEtraitCor, trait ~ module, value.var = "p")
+rownames(p_matrix_prom) <- p_matrix_prom[,1]
+p_matrix_prom <- as.matrix(p_matrix_prom[, -1])
 
 color_mapping <- colorRamp2(c(-0.7, 0, 0.7), c("salmon4", "white", "skyblue4"))
 
@@ -163,12 +156,14 @@ sig_regions_gr <- GRanges(
 
 combined_gr <- c(genome_gr, sig_regions_gr)
 
-ggbio::autoplot(combined_gr,layout = "karyogram", aes(color=module,fill=module)) +
+karyogram_prom <- ggbio::autoplot(combined_gr,layout = "karyogram", aes(color=module,fill=module)) +
   theme_void() +
-  scale_fill_manual(values = colors[unique(MEtraitCor$module) %in% unique(sig_regions$module)], na.value = "coral4") +
+  scale_fill_manual(values = colors[unique(MEtraitCor$module) %in% unique(sig_regions$module)], na.value = "lemonchiffon4") +
   scale_color_manual(values = colors[unique(MEtraitCor$module) %in% unique(sig_regions$module)], na.value = "black") +
   coord_flip() +
   facet_wrap(~seqnames, nrow = 1) +
   theme(strip.text = element_text(angle = 90), legend.position = "none")
+
+karyogram_prom
 
 ```

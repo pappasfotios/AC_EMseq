@@ -7,7 +7,7 @@ library(dplyr)
 library(ComplexHeatmap)
 
 # Import data
-bs <- readRDS("Filtered_BSseq.rds")
+bs <- readRDS("noSNPs_BSseq.rds")
 
 CpGislands <- read.table("cpgi.bed")
 colnames(CpGislands) <- c("chr","start","end")
@@ -81,7 +81,7 @@ gene_bodies_gr <- makeGRangesFromDataFrame(gene_bodies,
                                            keep.extra.columns = F,
                                            seqnames.field = "chr")
 ## reduce?
-intergenic <- as.data.frame(gaps(reduce(gene_bodies_gr)))
+intergenic <- as.data.frame(gaps(gene_bodies_gr))
 
 # Methylation Summary
 bs@colData$Id_seq <- rep(NA, nrow(bs@colData))
@@ -155,7 +155,7 @@ combo <- dplyr::inner_join(first_introns_ms, promoters_ms, by="GeneID")  ## furt
 data <- rbind(data.frame(feature="CpG_islands", means=islands_ms$means, sds=islands_ms$sds), 
               data.frame(feature="CpG_shores", means=shores_ms$means, sds=shores_ms$sds), 
               data.frame(feature="Gene_bodies", means=genes_ms$means, sds=genes_ms$sds),
-              data.frame(feature="Proximal_upstream_regions", means=promoters_ms$means, sds=promoters_ms$sds),
+              data.frame(feature="Promoters", means=promoters_ms$means, sds=promoters_ms$sds),
               data.frame(feature="Exons", means=exons_ms$means, sds=exons_ms$sds),
               data.frame(feature="Intergenic", means=intergenic_ms$means, sds=intergenic_ms$sds),
               data.frame(feature="Introns", means=introns_ms$means, sds=introns_ms$sds),

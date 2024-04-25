@@ -6,7 +6,7 @@ library(dplyr)
 library(ggplot2)
 
 # Import data
-bs <- readRDS("Filtered_BSseq.rds")
+bs <- readRDS("noSNPs_BSseq.rds")
 genome <- read.table(file.choose(), header = F)
 genome$start <- rep(1,nrow(genome))
 names(genome)[1:2] <- c("chr", "end")
@@ -27,14 +27,14 @@ COVmask <- matrixStats::rowMins(cov) >= 10
 r <- r[complete.cases(m) & SDmask & COVmask,]
 r <- as.data.frame(r)
 m <- m[complete.cases(m) & SDmask & COVmask,]
-
+  
 bin_widths <- seq(10000, 1000000, by=10000)
 
 cors <- data.frame(cor = numeric(), abs_cor = numeric(), width = integer(), n = as.integer())
 
 for (j in bin_widths) {
   
-  bins <- regioneR::createRandomRegions(nregions = 500,
+  bins <- regioneR::createRandomRegions(nregions = 1000,
                                         length.mean = j,
                                         length.sd = 0,
                                         genome = genome)
@@ -72,14 +72,17 @@ cors$width <- cors$width / 1000
 
 reduced <- setDT(cors)[, .(value= mean(abs_cor)),by=width]
 
+png(filename = "AbsCometh.png", width = 1200, height = 1000, res=300)
 ggplot(data=reduced, aes(x=width, y=value)) + theme_light() +
   geom_smooth(col="darkred", lwd=1) + 
   ylab("Absolute correlation") + 
   xlab("Bin width")
+dev.off()
 
-
+png(filename = "AbsCometh.png", width = 1600, height = 1000, res=300)
 ggplot(data=cors, aes(x=width, y=cor, group=width)) + 
   geom_boxplot(fill="#E30B5D") + xlab("Bin width (kb)") + ylab("Correlation") +
   theme_minimal()
+dev.off()
 
 

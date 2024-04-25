@@ -9,7 +9,7 @@ library(pedigree)
 library(ggplot2)
 library(GGally)
 
-bs <- readRDS("Filtered_BSseq.rds")
+bs <- readRDS("noSNPs_BSseq.rds")
 
 # ERM
 m <- bsseq::getMeth(bs, type = "raw", what = "perBase")
@@ -84,26 +84,6 @@ GRM1 <- as.matrix(GRM1)
 colnames(GRM1) <- seq(1,47)
 rownames(GRM1) <- colnames(GRM1)
 
-# IBD matrix
-IBD <- read.table("ibd_matrix.genome", header = T)
-IBD <- reshape(IBD[,c(2,4,14)], direction = "wide", idvar = "IID1", timevar = "IID2")
-
-rownames(IBD) <- substring(IBD[,1], 9)
-IBD <- IBD[,-1]
-colnames(IBD) <- substring(colnames(IBD), 15)
-
-IBD <- rbind(IBD, c(rep(0,ncol(IBD)-1),1))
-rownames(IBD)[nrow(IBD)] <- colnames(IBD)[!colnames(IBD) %in% rownames(IBD)]
-IBD <- cbind(c(1, rep(0,nrow(IBD)-1)), IBD)
-colnames(IBD)[1] <- rownames(IBD)[!rownames(IBD) %in% colnames(IBD)]
-
-IBD <- as.matrix(IBD)
-
-diag(IBD) <- 1
-
-IBD[lower.tri(IBD,diag = F)] <- IBD[upper.tri(IBD,diag = F)]
-IBD <- IBD[bs$Id_seq,bs$Id_seq]
-
 # Kinships from pedigree
 ped <- ped %>%
   mutate(FID = as.factor(interaction(Sire, Dam, drop = TRUE))) %>%
@@ -152,7 +132,6 @@ for (i in seq(1,ncol(score_matrix))) {
 meth_gen <- data.frame(MRM = as.numeric(erm2[lower.tri(erm2, diag = F)]),
                        A_mat = as.numeric(rA[lower.tri(rA, diag = F)]), 
                        GRM = as.numeric(GRM1[lower.tri(GRM1, diag = F)]),
-                       IBD = as.numeric(IBD[upper.tri(IBD, diag = F)]),
                        kinship = as.numeric(score_matrix[lower.tri(score_matrix, diag = F)])
                        )
 
@@ -160,7 +139,7 @@ meth_gen$kinship[meth_gen$kinship==0.5] <- "full-sibs"
 meth_gen$kinship[meth_gen$kinship==0.25] <- "half-sibs"
 meth_gen$kinship[meth_gen$kinship==0] <- "non-sibs"
 
-ggpairs(meth_gen, columns = 1:4, aes(color=kinship, alpha=0.9)) + 
+ggpairs(meth_gen, columns = 1:3, aes(color=kinship, alpha=0.9)) + 
   scale_fill_manual(values = c("turquoise4", "salmon3", "purple3")) + 
   scale_color_manual(values = c("turquoise4", "salmon3", "purple3"))
 
@@ -178,7 +157,7 @@ ht1 = Heatmap(as.matrix(rA),name = "A-matrix", rect_gp = gpar(type="none"), col=
                 }
               })
 
-ht2 = Heatmap(erm2,name = "MRM" ,rect_gp = gpar(type = "none"), col = col2, column_labels = rep(" ", ncol(erm1)),
+ht2 = Heatmap(erm2,name = "MRM" ,rect_gp = gpar(type = "none"), col = col2, column_labels = rep(" ", ncol(erm2)),
               cluster_rows = FALSE, cluster_columns = FALSE,
               cell_fun = function(j, i, x, y, w, h, fill) {
                 if(i < j) {
@@ -200,7 +179,7 @@ draw(ht3 + ht2, ht_gap = unit(-300, "mm"))
 ## Tanglegram
 d1 <- as.matrix(1 - rA) %>% dist() %>% hclust(method = "ward.D") %>% as.dendrogram()
 
-d2 <- as.matrix(1 - erm1) %>% dist() %>% hclust(method = "ward.D") %>% as.dendrogram()
+d2 <- as.matrix(1 - erm2) %>% dist() %>% hclust(method = "ward.D") %>% as.dendrogram()
 
 dl <- dendlist(d1 %>%
                  set("branches_lty", 1) %>%

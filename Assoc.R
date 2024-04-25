@@ -6,7 +6,7 @@ library(GenomicRanges)
 library(tidyverse)
 
 # Read file
-bs <- readRDS("Filtered_BSseq.rds")
+bs <- readRDS("noSNPs_BSseq.rds")
 
 # Set binary traits
 bs@colData$statusDen <- rep("high", nrow(bs@colData))
