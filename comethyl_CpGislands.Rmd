@@ -165,10 +165,7 @@ karyogram_cpgi <- ggbio::autoplot(combined_gr,layout = "karyogram", aes(color=mo
   facet_wrap(~seqnames, nrow = 1) +
   theme(strip.text = element_text(angle = 90), legend.position = "none")
 
-<<<<<<< HEAD:comethyl_CpGislandsPlusShores.Rmd
+
 karyogram_cpgi
 
 ```
-=======
-```
->>>>>>> a908be69b512feced790178cddd442932252646d:comethyl_CpGislands.Rmd
