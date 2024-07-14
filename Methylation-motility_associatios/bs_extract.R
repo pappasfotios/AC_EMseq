@@ -5,12 +5,9 @@ library(openxlsx)
 library(dplyr)
 library(readr)
 
-setwd("C:\\Users\\fopa0001\\Downloads\\OneDrive_1_04-12-2023")
-
 options(stringsAsFactors = FALSE)
 Sys.setenv(R_THREADS = 1)
 WGCNA::enableWGCNAThreads(nThreads = 4)
-
 
 colData <- read.xlsx("pheno_comethyl.xlsx", rowNames = TRUE)
 colData$Density[colData$Density>10000] <- 10000

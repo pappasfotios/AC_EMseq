@@ -17,8 +17,6 @@ library(ComplexHeatmap)
 library(ggplot2)
 library(ggbio)
 
-setwd("C:\\Users\\fopa0001\\Downloads\\OneDrive_1_04-12-2023")
-
 options(stringsAsFactors = FALSE)
 Sys.setenv(R_THREADS = 1)
 WGCNA::enableWGCNAThreads(nThreads = 4)
@@ -29,7 +27,6 @@ colData$Density[colData$Density>10000] <- 10000
 colData <- colData %>% rename(Concentration = Density)
 
 bs <- readRDS("noSNPs_BSseq.rds")
-setwd("C:\\Users\\fopa0001\\Downloads\\OneDrive_1_04-12-2023")
 
 ### annotation file
 bed <- read.table(file="cpgi.bed", 
@@ -38,7 +35,7 @@ bed <- read.table(file="cpgi.bed",
                   sep="\t",
                   stringsAsFactors = F)
 
-colnames(bed) <- c("chr","start","end")#,"type","what","how")
+#colnames(bed) <- c("chr","start","end")#,"type","what","how")
 
 ac_annot <- makeGRangesFromDataFrame(bed,
                                      keep.extra.columns = F,

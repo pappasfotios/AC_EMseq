@@ -1,5 +1,3 @@
-setwd("C:\\Users\\fopa0001\\Downloads\\OneDrive_1_04-12-2023")
-
 library(Biobase)
 library(comethyl)
 library(GenomicRanges)
@@ -8,7 +6,7 @@ library(tidyverse)
 # Read file
 bs <- readRDS("noSNPs_BSseq.rds")
 
-# Set binary traits
+# Set binary traits for sperm density and VCL
 bs@colData$statusDen <- rep("high", nrow(bs@colData))
 bs@colData$statusDen[order(bs@colData$Density)[21:27]] <- NA
 bs@colData$statusDen[order(bs@colData$Density)[1:20]] <- "low"
@@ -18,13 +16,7 @@ bs@colData$statusVCL[order(bs@colData$VCL)[21:27]] <- NA
 bs@colData$statusVCL[order(bs@colData$VCL)[1:20]] <- "low"
 
 
-#r <- promoters[,1:3]
-#ac_annot <- makeGRangesFromDataFrame(r, 
-#                                     keep.extra.columns = F,
-#                                     ignore.strand = TRUE)
-
-# Get and filter CpG regions
-regions <- getRegions(bs, n=5) #, custom=ac_annot)
+regions <- getRegions(bs, n=5) 
 
 regions<- filterRegions(regions, covMin = 10, methSD = 0.1, file = "Filtered_Regions.txt")
 
@@ -39,11 +31,6 @@ methAdj <- adjustRegionMeth(meth,
                             PCs = mod,
                             file = "Adjusted_Region_Methylation.rds")
 
-#r$seqnames <- as.character(r$seqnames)
-#c <- bsseq::getCoverage(bs, regions = promoters[,1:3], type = "Cov", what = "perRegionAverage")
-#r <- r[complete.cases(m) & matrixStats::rowSds(m) > 0.1 & matrixStats::rowMins(c) >= 10 ,]
-#r <- as.data.frame(r)
-#m <- m[complete.cases(m) & matrixStats::rowSds(m) > 0.1 & matrixStats::rowMins(c) >= 10,]
 
 # Association tests for sperm density
 den_assoc <- data.frame(pValue=as.numeric(), diff=as.numeric())
@@ -73,6 +60,7 @@ vcl_assoc$adjP <- p.adjust(vcl_assoc$pValue, method = "BH")
 
 
 # Plots
+# Sperm motility based on VCL
 vlc2 <- ggplot(vcl_assoc, aes(x=diff,y=-log10(pValue))) + 
   geom_point(aes(col=adjP > 0.05)) + 
   theme_minimal() +
@@ -84,7 +72,7 @@ vlc2 <- ggplot(vcl_assoc, aes(x=diff,y=-log10(pValue))) +
   ylim(-0.2, 8)
 vlc2
 
-
+# Sperm concentration
 vlc1 <- ggplot(den_assoc, aes(x=diff,y=-log10(pValue))) + 
   geom_point(aes(col=adjP > 0.05)) +
   theme_minimal() + 
@@ -124,5 +112,8 @@ qqman::qq(vcl_assoc$pValue)
 
 
 
-sig_regions <- cbind(methAdj[,colnames(methAdj) %in% den_assoc$RegionID[den_assoc$adjP < 0.05]], methAdj[,colnames(methAdj) %in% vcl_assoc$RegionID[vcl_assoc$adjP < 0.05]])
+sig_regions <- cbind(methAdj[,colnames(methAdj) %in% 
+  den_assoc$RegionID[den_assoc$adjP < 0.05]], methAdj[,colnames(methAdj) %in% 
+  vcl_assoc$RegionID[vcl_assoc$adjP < 0.05]])
+  
 write.table(sig_regions,file = "sigAssocRegions.txt")

@@ -38,6 +38,7 @@ command1 = [bedtools_path, "flank",
             "-b", "2000"]
 
 output_file1 = "cpgi_shores2.bed"
+
 with open(output_file1, "w") as output:
     # Run the bedtools command and capture the output
     subprocess.run(command1, stdout=output)
@@ -49,6 +50,7 @@ command2 = [bedtools_path, "slop",
             "-b", "2000"]
 
 output_file2 = "IslandsPlusShores2.bed"
+
 with open(output_file2, "w") as output:
     # Run the bedtools command and capture the output
     subprocess.run(command2, stdout=output)

@@ -1,12 +1,13 @@
 SAMPLES = glob_wildcards("raw_reads/{sample}_R1_001.fastq.gz").sample
 METH_OUTPUT = "meth_extracted"
 print("The sample names to be processed are:", SAMPLES)
-#PAIRED = ["R1","R2"]
+
+# Path to reference genome file
+GENOME = "/home/csas0002/Ref_genomes/Salvelinus"
 
 rule all:
     input: 
         expand("meth_extracted/{sample}_bismark_bt2_pe.deduplicated.bismark.cov.gz", sample=SAMPLES)
-
 
 rule fastp:
     output:
@@ -18,13 +19,28 @@ rule fastp:
     log:
         "logs_fastp/{sample}.log"    
     shell:
-        "fastp -i {input.read1} -I {input.read2} -o {output.read1} -O {output.read2} --html {wildcards.sample}.html 2> {log}"  
-        
+        r"""fastp -f 10 -t 10 
+        -i {input.read1} -I {input.read2} 
+        -o {output.read1} -O {output.read2} 
+        --html {wildcards.sample}.html 2> {log}
+        """ 
+
+rule bismark_genome_prep:
+    output:
+        bisulfite_genome = "Bisulfite_genome"
+    input:
+        ref_genome = GENOME
+    shell:
+        r"""
+        bismark_genome_preparation {input.ref_genome}
+        """
+
 rule bismark_align:
     output:
         bam = temporary("{sample}_bismark_bt2_pe.bam"),
-        report = "{sample}_bismark_bt2_PE_report.txt"
+        report = "{sample}_bismark_bt2_PE_report.txt",
     input:
+        rules.bismark_genome_prep.output,
         read1 = "trimmed_{sample}_R1_001.fastq.gz",
         read2 = "trimmed_{sample}_R2_001.fastq.gz"
     log:
@@ -33,7 +49,7 @@ rule bismark_align:
         4    
     shell:
         r"""
-        bismark --parallel {threads} --genome /home/csas0002/Ref_genomes/Salvelinus -1 {input.read1} -2 {input.read2} 2> {log}
+        bismark --parallel {threads} --genome {GENOME} -1 {input.read1} -2 {input.read2} 2> {log}
         mv trimmed_{wildcards.sample}_R1_001_bismark_bt2_pe.bam {wildcards.sample}_bismark_bt2_pe.bam
         mv trimmed_{wildcards.sample}_R1_001_bismark_bt2_PE_report.txt {wildcards.sample}_bismark_bt2_PE_report.txt
         """
@@ -59,6 +75,10 @@ rule meth_extractor:
         "meth_extractor/{sample}.log"
     shell:
         r"""
-        bismark_methylation_extractor --buffer_size 20G --scaffolds --paired-end --parallel 4 --gzip --comprehensive --cytosine_report --bedgraph {input.bam} --output {METH_OUTPUT} 2> {log}
+        bismark_methylation_extractor --buffer_size 20G --scaffolds 
+        --paired-end --parallel 4 --gzip --comprehensive 
+        --cytosine_report --CX --bedgraph 
+        {input.bam} --output {METH_OUTPUT} 2> {log}
         """
-        
+
+

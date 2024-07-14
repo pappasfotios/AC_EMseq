@@ -1,5 +1,3 @@
-setwd("C:\\Users\\fopa0001\\Downloads\\OneDrive_1_04-12-2023")
-
 library(dplyr)
 library(ComplexHeatmap)
 library(circlize)
