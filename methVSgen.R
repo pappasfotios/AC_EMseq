@@ -20,14 +20,13 @@ COVmask <- matrixStats::rowMins(cov) >= 10
 
 m <- m[complete.cases(m) & SDmask & COVmask,]
 
-erm1 <- cor(m)
-erm2 <- scale(t(m)) %*% t(scale(t(m)))
-erm2 <- as.matrix(erm2/mean(diag(erm2)))
+MRM <- scale(t(m)) %*% t(scale(t(m)))
+MRM <- as.matrix(MRM/nrow(m))
 
-colnames(erm2) <- seq(1,47)
-rownames(erm2) <- seq(1,47)
+colnames(MRM) <- seq(1,47)
+rownames(MRM) <- seq(1,47)
 
-corrplot::corrplot(erm2, method = "square", diag = T, is.corr = F)
+corrplot::corrplot(MRM, method = "square", diag = T, is.corr = F)
 
 ped <- read.table("//wsl.localhost/Ubuntu/home/fotis/analysis/BLUP/ac_ped_updated_2023.txt", header = T, stringsAsFactors = T)
 ped <- ped[!duplicated(ped$Id),]
@@ -129,7 +128,7 @@ for (i in seq(1,ncol(score_matrix))) {
 
 
 # Plots
-meth_gen <- data.frame(MRM = as.numeric(erm2[lower.tri(erm2, diag = F)]),
+meth_gen <- data.frame(MRM = as.numeric(MRM[lower.tri(MRM, diag = F)]),
                        A_mat = as.numeric(rA[lower.tri(rA, diag = F)]), 
                        GRM = as.numeric(GRM1[lower.tri(GRM1, diag = F)]),
                        kinship = as.numeric(score_matrix[lower.tri(score_matrix, diag = F)])
@@ -157,7 +156,7 @@ ht1 = Heatmap(as.matrix(rA),name = "A-matrix", rect_gp = gpar(type="none"), col=
                 }
               })
 
-ht2 = Heatmap(erm2,name = "MRM" ,rect_gp = gpar(type = "none"), col = col2, column_labels = rep(" ", ncol(erm2)),
+ht2 = Heatmap(MRM,name = "MRM" ,rect_gp = gpar(type = "none"), col = col2, column_labels = rep(" ", ncol(MRM)),
               cluster_rows = FALSE, cluster_columns = FALSE,
               cell_fun = function(j, i, x, y, w, h, fill) {
                 if(i < j) {
@@ -179,7 +178,7 @@ draw(ht3 + ht2, ht_gap = unit(-300, "mm"))
 ## Tanglegram
 d1 <- as.matrix(1 - rA) %>% dist() %>% hclust(method = "ward.D") %>% as.dendrogram()
 
-d2 <- as.matrix(1 - erm2) %>% dist() %>% hclust(method = "ward.D") %>% as.dendrogram()
+d2 <- as.matrix(1 - MRM) %>% dist() %>% hclust(method = "ward.D") %>% as.dendrogram()
 
 dl <- dendlist(d1 %>%
                  set("branches_lty", 1) %>%
