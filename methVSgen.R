@@ -138,9 +138,17 @@ meth_gen$kinship[meth_gen$kinship==0.5] <- "full-sibs"
 meth_gen$kinship[meth_gen$kinship==0.25] <- "half-sibs"
 meth_gen$kinship[meth_gen$kinship==0] <- "non-sibs"
 
-ggpairs(meth_gen, columns = 1:3, aes(color=kinship, alpha=0.9)) + 
+png(filename = "matrix_pairs12.png", width = 1250, height = 1200, res = 300)
+ggpairs(meth_gen, columns = c(1,2), aes(color=kinship, alpha=0.9)) + 
   scale_fill_manual(values = c("turquoise4", "salmon3", "purple3")) + 
   scale_color_manual(values = c("turquoise4", "salmon3", "purple3"))
+dev.off()
+
+png(filename = "matrix_pairs13.png", width = 1250, height = 1200, res = 300)
+ggpairs(meth_gen, columns = c(1,3), aes(color=kinship, alpha=0.9)) + 
+  scale_fill_manual(values = c("turquoise4", "salmon3", "purple3")) + 
+  scale_color_manual(values = c("turquoise4", "salmon3", "purple3"))
+dev.off()
 
 ## Complex Heatmap
 col1 = colorRamp2(c(min(meth_gen$A_mat), median(meth_gen$A_mat), max(meth_gen$A_mat)), c("white", "skyblue","darkblue"))
@@ -148,13 +156,13 @@ col2 = colorRamp2(c(min(meth_gen$MRM), median(meth_gen$MRM), max(meth_gen$MRM)),
 col3 = colorRamp2(c(min(meth_gen$GRM), median(meth_gen$GRM), max(meth_gen$GRM)), c("white", "thistle","purple4"))
 
 
-ht1 = Heatmap(as.matrix(rA),name = "A-matrix", rect_gp = gpar(type="none"), col=col1,
+ht1 = Heatmap(as.matrix(rA), rect_gp = gpar(type="none"), col=col1,
               cluster_rows = FALSE, cluster_columns = FALSE,
               cell_fun = function(j, i, x, y, w, h, fill) {
                 if(i > j) {
                   grid.rect(x, y, w, h, gp = gpar(fill = fill, col = "darkgrey", lwd=2))
                 }
-              })
+              }, heatmap_legend_param = list(legend_height=unit(5,"cm"), title = expression(bold('A'['MAT']))))
 
 ht2 = Heatmap(MRM,name = "MRM" ,rect_gp = gpar(type = "none"), col = col2, column_labels = rep(" ", ncol(MRM)),
               cluster_rows = FALSE, cluster_columns = FALSE,
@@ -162,7 +170,7 @@ ht2 = Heatmap(MRM,name = "MRM" ,rect_gp = gpar(type = "none"), col = col2, colum
                 if(i < j) {
                   grid.rect(x, y, w, h, gp = gpar(fill = fill,col = "darkgrey", lwd=2))
                 }
-              })
+              }, heatmap_legend_param = list(legend_height=unit(5,"cm")))
 
 ht3 = Heatmap(GRM1,name = "GRM", rect_gp = gpar(type="none"), col=col3,
               cluster_rows = FALSE, cluster_columns = FALSE,
@@ -170,7 +178,7 @@ ht3 = Heatmap(GRM1,name = "GRM", rect_gp = gpar(type="none"), col=col3,
                 if(i > j) {
                   grid.rect(x, y, w, h, gp = gpar(fill = fill, col = "darkgrey", lwd=2))
                 }
-              })
+              }, heatmap_legend_param = list(legend_height=unit(5,"cm")))
 
 draw(ht1 + ht2, ht_gap = unit(-300, "mm"))
 draw(ht3 + ht2, ht_gap = unit(-300, "mm"))

@@ -29,7 +29,13 @@ bs <- getCpGs(colData,
 
 bs <- filterCpGs(bs, cov = 10, perSample = 0.85, file = "Filtered_BSseq.rds")
 
-# Use transitions information from vcf to filter out SNPs
+## Use transitions information from vcf to filter out SNPs
+# Command to filter the VCF:
+# bcftools view -i 'TYPE="snp" && 
+# (REF="A" && ALT="G" || REF="G" && ALT="A" || 
+# REF="C" && ALT="T" || REF="T" && ALT="C")' \
+# em_geno_maf05_cr1_2al.recode.vcf | 
+# bcftools query -f '%CHROM\t%POS0\t%POS\n' > transitions052al.bed
 transitions <- read.table("transitions052al.bed", header=F)
 names(transitions) <- c("chr", "start", "end")
 gr_transitions <- makeGRangesFromDataFrame(transitions)

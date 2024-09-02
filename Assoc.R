@@ -126,3 +126,6 @@ qqman::qq(vcl_assoc$pValue)
 
 sig_regions <- cbind(methAdj[,colnames(methAdj) %in% den_assoc$RegionID[den_assoc$adjP < 0.05]], methAdj[,colnames(methAdj) %in% vcl_assoc$RegionID[vcl_assoc$adjP < 0.05]])
 write.table(sig_regions,file = "sigAssocRegions.txt")
+
+write.table(den_assoc[den_assoc$adjP<0.05,4:6], file = "den_assoc_hits.bed", quote = F, row.names = F, col.names = F, sep = "\t")
+write.table(vcl_assoc[vcl_assoc$adjP<0.05,4:6], file = "vcl_assoc_hits.bed", quote = F, row.names = F, col.names = F, sep = "\t")
