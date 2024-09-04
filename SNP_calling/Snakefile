@@ -1,9 +1,9 @@
 import os
 
 # Input
-INPUT_DIR = "/home/fotis/phd/analysis/EMseq/old_work/"
-REF_GENOME = "/home/fotis/msc_thesis/reference/Salvelinus/GCF_002910315.2_ASM291031v2_genomic.fna"
-REF_index = "/home/fotis/msc_thesis/reference/Salvelinus/GCF_002910315.2_ASM291031v2_genomic.fna.fai"
+INPUT_DIR = "../aligned/"
+REF_GENOME = "./reference/GCF_002910315.2_ASM291031v2_genomic.fna"
+REF_index = "./reference/GCF_002910315.2_ASM291031v2_genomic.fna.fai"
 
 # Sample list
 def get_samples(input_dir):
