@@ -1,9 +1,7 @@
-## Analysis of EM-seq data
-Run filtering, alignment and methylation extraction pipeline (uses Bismark): **Snakefile**
+## Analysis of EM-seq data derived from sperm DNA
+Run filtering, alignment and methylation extraction pipeline (uses Bismark): **https://github.com/pappasfotios/AC_EMseq/blob/main/Reads_to_meth_pipeline/Snakefile**
 
-```{shell}
-snakemake --cores 4 --keep-going
-```
+Double-mask alignments and call genetic variants: **https://github.com/pappasfotios/AC_EMseq/blob/main/SNP_calling/Snakefile**
 
 Detect CpG islands and their respective shores in the reference genome: **CpGislandsAndShores.py**
 
