@@ -1,0 +1,86 @@
+import os
+
+# Input
+INPUT_DIR = "../aligned/"
+REF_GENOME = "./reference/GCF_002910315.2_ASM291031v2_genomic.fna"
+REF_index = "./reference/GCF_002910315.2_ASM291031v2_genomic.fna.fai"
+
+# Sample list
+def get_samples(input_dir):
+    bam_files = [f for f in os.listdir(input_dir) if f.endswith(".bam") and "s-398" not in f]
+    samples = [os.path.splitext(f)[0] for f in bam_files]
+    return samples
+
+SAMPLES = get_samples(INPUT_DIR)
+
+rule all:
+    input:
+        "variants/em_geno.vcf"
+
+# Revelio
+rule mask_bases:
+    input:
+        bam=os.path.join(INPUT_DIR, "{sample}.bam"),
+        ref=REF_GENOME
+    output:
+        masked_bam=temp("{sample}_masked.bam")
+    conda:
+        "epiSNP"
+    threads: 2
+    shell:
+        """
+        samtools calmd --threads {threads} -b {input.bam} {input.ref} > {wildcards.sample}_calmd.bam 2> /dev/null && \
+        ./revelio/revelio.py {wildcards.sample}_calmd.bam {output.masked_bam} && \
+        rm {wildcards.sample}_calmd.bam
+        """
+
+# Add read-groups to BAM files
+rule add_read_group:
+    input:
+        bam_masked=os.path.join(INPUT_DIR, "{sample}.bam")
+    output:
+        bam_rg="{sample}_rg.bam"
+    params:
+        name=lambda wildcards: wildcards.sample
+    conda:
+        "epiSNP"
+    shell:
+        "bamaddrg -b {input.bam_masked} -s {params.name} > {output.bam_rg}"
+        
+# Index BAM
+rule index_bam:
+    input:
+        bam_with_rg="{sample}_rg.bam"
+    output:
+        indxd_rgbam="{sample}_rg.bam.bai"
+    conda:
+        "epiSNP"
+    shell:
+        "samtools index {input.bam_with_rg}"
+
+# BAM list for variant-caller
+rule generate_bam_list:
+    output:
+        bam_list="bamfiles.list"
+    run:
+        with open(output.bam_list, "w") as bam_list:
+            for sample in SAMPLES:
+                bam_list.write(f"./{sample}_rg.bam\n")
+
+# Freebayes
+rule variant_calling:
+    input:
+        bam=expand("{sample}_rg.bam", sample=SAMPLES),
+        bai=expand("{sample}_rg.bam.bai", sample=SAMPLES),
+        bam_list="bamfiles.list",
+        ref=REF_GENOME,
+        refai=REF_index
+    output:
+        vcf="variants/em_geno.vcf"
+    conda:
+        "epiSNP"
+    threads: 40
+    shell:
+        """
+        freebayes-parallel <(fasta_generate_regions.py {input.refai} 100000) {threads} -f {input.ref} -L {input.bam_list} --use-best-n-alleles 2 --min-alternate-total 3 | vcffilter -f "TYPE = snp" > {output.vcf}
+        """
