@@ -16,14 +16,14 @@ colnames(CpGislands) <- c("chr","start","end")
 CpGshores <- read.table("cpgi_shores.bed")
 colnames(CpGshores) <- c("chr","start","end")
 
-gene_bodies <- read.table("Salpinus_genes.gff", stringsAsFactors = F, sep="\t",)
+gene_bodies <- read.table("Salpinus_genes.gff", stringsAsFactors = F, sep="\t",)  # according to 3rd property of the gff file
 gene_bodies <- gene_bodies[,c(1,4,5,7)]
 colnames(gene_bodies) <- c("chr","start","end","strand")
 gene_bodies$uID <- paste0(gene_bodies$chr,":",gene_bodies$start)
 gene_bodies$uID[gene_bodies$strand=="-"] <- paste0(gene_bodies$chr[gene_bodies$strand=="-"],":",gene_bodies$end[gene_bodies$strand=="-"])
 gene_bodies <- gene_bodies[!duplicated(gene_bodies),]
 
-promoters <- read.table("Salpinus_promoters_1kb.gff", stringsAsFactors = F, sep="\t",)
+promoters <- read.table("Salpinus_promoters_1kb.gff", stringsAsFactors = F, sep="\t",)  # performed bedtools slop (1Kb upstream flanking) on Salpinus_genes.gff with the -s option (strand-based)
 promoters$GeneID <- sub(".*GeneID:(\\d+).*", "\\1", promoters$V9)
 promoters <- promoters[,c(1,4,5,7,10)]
 colnames(promoters) <- c("chr","start","end","strand","GeneID")
