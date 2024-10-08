@@ -23,7 +23,7 @@ rule mask_bases:
         bam=os.path.join(INPUT_DIR, "{sample}.bam"),
         ref=REF_GENOME
     output:
-        masked_bam=temp("{sample}_masked.bam")
+        masked_bam="{sample}_masked.bam"
     conda:
         "epiSNP"
     threads: 2
@@ -37,7 +37,7 @@ rule mask_bases:
 # Add read-groups to BAM files
 rule add_read_group:
     input:
-        bam_masked=os.path.join(INPUT_DIR, "{sample}.bam")
+        bam_masked="{sample}_masked.bam"
     output:
         bam_rg="{sample}_rg.bam"
     params:
