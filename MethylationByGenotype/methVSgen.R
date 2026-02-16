@@ -1,5 +1,3 @@
-setwd("C:\\Users\\fopa0001\\Downloads\\OneDrive_1_04-12-2023")
-
 library(dplyr)
 library(ComplexHeatmap)
 library(circlize)
@@ -28,10 +26,10 @@ rownames(MRM) <- seq(1,47)
 
 corrplot::corrplot(MRM, method = "square", diag = T, is.corr = F)
 
-ped <- read.table("//wsl.localhost/Ubuntu/home/fotis/analysis/BLUP/ac_ped_updated_2023.txt", header = T, stringsAsFactors = T)
+ped <- read.table("ac_ped_updated_2023.txt", header = T, stringsAsFactors = T)
 ped <- ped[!duplicated(ped$Id),]
 
-tagIDs <- openxlsx::read.xlsx("C:/Users/fopa0001/Downloads/Arctic_charr_EMseq_pheno.xlsx")
+tagIDs <- openxlsx::read.xlsx("Arctic_charr_EMseq_pheno.xlsx")
 tagIDs$Id_tag <- as.factor(tagIDs$Id_tag)
 tagIDs <- tagIDs[-grep(398, tagIDs$Id_seq),]
 
@@ -199,3 +197,4 @@ dl <- dendlist(d1 %>%
 set.seed(3958)
 x <- dl %>% untangle(method = "random", R = 10)
 x %>% plot(main="Hierarchical clustering: A-matrix vs Methylation correlation matrix")
+
