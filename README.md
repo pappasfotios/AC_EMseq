@@ -23,3 +23,6 @@ bash annotate.sh <input_bed_file> <slop_value in bp> <database (zf or hs for zeb
 ```
 
 Conda environments used for different analyses: **[Environments](https://github.com/pappasfotios/AC_EMseq/tree/main/Environments)**
+
+# Publication
+Pappas, F., Johnsson, M., Andersson, G. et al. Sperm DNA methylation landscape and its links to male fertility in a non-model teleost using EM-seq. Heredity 134, 293–305 (2025). https://doi.org/10.1038/s41437-025-00756-y
